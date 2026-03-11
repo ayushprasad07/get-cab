@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import React, { useEffect, useState, useRef } from "react";
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, Source, Layer } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import type { MapRef, ViewState } from 'react-map-gl/maplibre';
+
 
 interface MapProps {
   pickupLocation?: { lat: number; lng: number };
@@ -15,179 +17,51 @@ const MapComponent: React.FC<MapProps> = ({
   dropLocation,
   height = "300px",
 }) => {
-  const mapRef        = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const polylineRef   = useRef<L.Polyline | null>(null);
-  const isClient      = typeof window !== "undefined";
+  const mapRef = useRef<MapRef>(null);
+  const isClient = typeof window !== "undefined";
+  
+  const [viewState, setViewState] = useState<Partial<ViewState>>({
+    longitude: -74.006,
+    latitude: 40.7128,
+    zoom: 13
+  });
 
+  const [activePopup, setActivePopup] = useState<'pickup' | 'drop' | null>(null);
+
+  // Update map view when locations change
   useEffect(() => {
-    if (!isClient || !mapRef.current) return;
+    if (!mapRef.current || (!pickupLocation && !dropLocation)) return;
 
-    /* ── Init map ── */
-    if (!mapInstanceRef.current) {
-      mapInstanceRef.current = L.map(mapRef.current, {
-        zoomControl: false,
-        attributionControl: false,
-      }).setView([40.7128, -74.006], 13);
-
-      /* Dark map tiles (CartoDB Dark Matter) */
-      L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-        {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-          subdomains: "abcd",
-          maxZoom: 19,
-        }
-      ).addTo(mapInstanceRef.current);
-
-      /* Custom zoom control — bottom right, styled */
-      L.control
-        .zoom({ position: "bottomright" })
-        .addTo(mapInstanceRef.current);
-
-      /* Minimal attribution — bottom left */
-      L.control
-        .attribution({ position: "bottomleft", prefix: false })
-        .addTo(mapInstanceRef.current);
-    }
-
-    const map = mapInstanceRef.current;
-
-    /* ── Clear existing markers & polyline ── */
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
-        map.removeLayer(layer);
-      }
-    });
-    if (polylineRef.current) {
-      map.removeLayer(polylineRef.current);
-      polylineRef.current = null;
-    }
-
-    /* ── Custom SVG icon factory ── */
-    const makeIcon = (color: string, label: string) =>
-      L.divIcon({
-        className: "",
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -38],
-        html: `
-          <div style="
-            width:36px; height:36px; position:relative;
-            filter: drop-shadow(0 4px 12px ${color}66);
-          ">
-            <svg viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;position:absolute;top:0;left:0;">
-              <path d="M18 2C10.268 2 4 8.268 4 16c0 10.5 14 26 14 26s14-15.5 14-26c0-7.732-6.268-14-14-14z"
-                fill="${color}" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-              <text x="18" y="20" text-anchor="middle" dominant-baseline="middle"
-                fill="black" font-size="12" font-weight="700"
-                font-family="system-ui, sans-serif">${label}</text>
-            </svg>
-          </div>
-        `,
-      });
-
-    const pickupIcon = makeIcon("#ffffff", "A");
-    const dropIcon   = makeIcon("#e5e5e5", "B");
-
-    /* ── Pickup marker ── */
-    if (pickupLocation) {
-      L.marker([pickupLocation.lat, pickupLocation.lng], {
-        icon: pickupIcon,
-        title: "Pickup",
-      })
-        .bindPopup(
-          `<div style="
-            font-family:'DM Sans',sans-serif;
-            background:#111; color:#fff;
-            border:1px solid rgba(255,255,255,0.12);
-            border-radius:10px; padding:10px 14px;
-            font-size:13px; min-width:120px;
-          ">
-            <div style="font-weight:600;margin-bottom:2px;">📍 Pickup</div>
-            <div style="color:rgba(255,255,255,0.45);font-size:11px;">
-              ${pickupLocation.lat.toFixed(4)}, ${pickupLocation.lng.toFixed(4)}
-            </div>
-          </div>`,
-          {
-            className: "custom-popup",
-            closeButton: false,
-            maxWidth: 220,
-          }
-        )
-        .addTo(map);
-    }
-
-    /* ── Drop marker ── */
-    if (dropLocation) {
-      L.marker([dropLocation.lat, dropLocation.lng], {
-        icon: dropIcon,
-        title: "Drop-off",
-      })
-        .bindPopup(
-          `<div style="
-            font-family:'DM Sans',sans-serif;
-            background:#111; color:#fff;
-            border:1px solid rgba(255,255,255,0.12);
-            border-radius:10px; padding:10px 14px;
-            font-size:13px; min-width:120px;
-          ">
-            <div style="font-weight:600;margin-bottom:2px;">🏁 Drop-off</div>
-            <div style="color:rgba(255,255,255,0.45);font-size:11px;">
-              ${dropLocation.lat.toFixed(4)}, ${dropLocation.lng.toFixed(4)}
-            </div>
-          </div>`,
-          {
-            className: "custom-popup",
-            closeButton: false,
-            maxWidth: 220,
-          }
-        )
-        .addTo(map);
-    }
-
-    /* ── Route polyline ── */
     if (pickupLocation && dropLocation) {
-      polylineRef.current = L.polyline(
-        [
-          [pickupLocation.lat, pickupLocation.lng],
-          [dropLocation.lat, dropLocation.lng],
-        ],
-        {
-          color: "rgba(255,255,255,0.7)",
-          weight: 2.5,
-          dashArray: "6 6",
-          lineCap: "round",
-          lineJoin: "round",
-        }
-      ).addTo(map);
+      // Fit bounds to show both markers
+      const bounds = {
+        minLng: Math.min(pickupLocation.lng, dropLocation.lng),
+        maxLng: Math.max(pickupLocation.lng, dropLocation.lng),
+        minLat: Math.min(pickupLocation.lat, dropLocation.lat),
+        maxLat: Math.max(pickupLocation.lat, dropLocation.lat),
+      };
 
-      /* Subtle glow duplicate under the dashed line */
-      L.polyline(
+      mapRef.current.fitBounds(
         [
-          [pickupLocation.lat, pickupLocation.lng],
-          [dropLocation.lat, dropLocation.lng],
+          [bounds.minLng, bounds.minLat],
+          [bounds.maxLng, bounds.maxLat]
         ],
-        {
-          color: "rgba(255,255,255,0.12)",
-          weight: 8,
-          lineCap: "round",
-        }
-      ).addTo(map);
-
-      const bounds = L.latLngBounds(
-        [pickupLocation.lat, pickupLocation.lng],
-        [dropLocation.lat, dropLocation.lng]
+        { padding: 60, duration: 800 }
       );
-      map.fitBounds(bounds, { padding: [60, 60], animate: true, duration: 0.8 });
     } else if (pickupLocation) {
-      map.setView([pickupLocation.lat, pickupLocation.lng], 15, { animate: true, duration: 0.6 });
+      mapRef.current.flyTo({
+        center: [pickupLocation.lng, pickupLocation.lat],
+        zoom: 15,
+        duration: 600
+      });
     } else if (dropLocation) {
-      map.setView([dropLocation.lat, dropLocation.lng], 15, { animate: true, duration: 0.6 });
+      mapRef.current.flyTo({
+        center: [dropLocation.lng, dropLocation.lat],
+        zoom: 15,
+        duration: 600
+      });
     }
-
-  }, [pickupLocation, dropLocation, isClient]);
+  }, [pickupLocation, dropLocation]);
 
   if (!isClient) {
     return (
@@ -213,43 +87,106 @@ const MapComponent: React.FC<MapProps> = ({
     );
   }
 
+  // Custom marker component
+  const CustomMarker = ({ 
+    position, 
+    color, 
+    label, 
+    type 
+  }: { 
+    position: { lat: number; lng: number }; 
+    color: string; 
+    label: string;
+    type: 'pickup' | 'drop';
+  }) => (
+    <Marker
+      longitude={position.lng}
+      latitude={position.lat}
+      onClick={e => {
+        e.originalEvent.stopPropagation();
+        setActivePopup(type);
+      }}
+    >
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          position: 'relative',
+          filter: `drop-shadow(0 4px 12px ${color}66)`,
+          cursor: 'pointer',
+          transform: 'translate(-50%, -100%)', // Anchor point at bottom center
+        }}
+        onMouseEnter={() => setActivePopup(type)}
+        onMouseLeave={() => setActivePopup(null)}
+      >
+        <svg viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 36, height: 44 }}>
+          <path
+            d="M18 2C10.268 2 4 8.268 4 16c0 10.5 14 26 14 26s14-15.5 14-26c0-7.732-6.268-14-14-14z"
+            fill={color}
+            stroke="rgba(255,255,255,0.3)"
+            strokeWidth="1.5"
+          />
+          <text
+            x="18"
+            y="20"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="black"
+            fontSize="12"
+            fontWeight="700"
+            fontFamily="system-ui, sans-serif"
+          >
+            {label}
+          </text>
+        </svg>
+      </div>
+    </Marker>
+  );
+
   return (
     <>
       <style>{`
-        /* ── Dark map tile overrides ── */
-        .leaflet-container {
-          background: #0a0a0a !important;
+        /* Dark theme overrides for maplibre */
+        .maplibregl-map {
           font-family: 'DM Sans', sans-serif !important;
+          background: #0a0a0a !important;
+        }
+        
+        .maplibregl-canvas-container {
+          background: #0a0a0a;
         }
 
-        /* Zoom control */
-        .leaflet-control-zoom {
+        /* Navigation control styling */
+        .maplibregl-ctrl-group {
+          background: rgba(0,0,0,0.8) !important;
+          backdrop-filter: blur(10px) !important;
           border: 1px solid rgba(255,255,255,0.1) !important;
           border-radius: 10px !important;
           overflow: hidden;
           box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
           margin: 0 12px 12px 0 !important;
         }
-        .leaflet-control-zoom a {
-          background: rgba(0,0,0,0.8) !important;
-          backdrop-filter: blur(10px) !important;
+        
+        .maplibregl-ctrl-group button {
+          background: transparent !important;
           color: rgba(255,255,255,0.6) !important;
           border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-          width: 32px !important; height: 32px !important;
-          line-height: 32px !important;
-          font-size: 16px !important;
+          width: 32px !important;
+          height: 32px !important;
           transition: background 0.2s, color 0.2s !important;
         }
-        .leaflet-control-zoom a:hover {
+        
+        .maplibregl-ctrl-group button:hover {
           background: rgba(255,255,255,0.1) !important;
           color: white !important;
         }
-        .leaflet-control-zoom-out {
+        
+        .maplibregl-ctrl-group button:last-child {
           border-bottom: none !important;
         }
 
-        /* Attribution */
-        .leaflet-control-attribution {
+        /* Attribution control */
+        .maplibregl-ctrl-attrib {
           background: rgba(0,0,0,0.6) !important;
           backdrop-filter: blur(8px) !important;
           color: rgba(255,255,255,0.2) !important;
@@ -260,35 +197,171 @@ const MapComponent: React.FC<MapProps> = ({
           border-bottom: none !important;
           margin: 0 !important;
         }
-        .leaflet-control-attribution a {
+        
+        .maplibregl-ctrl-attrib a {
           color: rgba(255,255,255,0.35) !important;
         }
 
-        /* Popup */
-        .custom-popup .leaflet-popup-content-wrapper {
+        /* Popup styling */
+        .maplibregl-popup {
+          max-width: 220px !important;
+        }
+        
+        .maplibregl-popup-content {
+          background: #111 !important;
+          color: #fff !important;
+          border: 1px solid rgba(255,255,255,0.12) !important;
+          border-radius: 10px !important;
+          padding: 10px 14px !important;
+          font-size: 13px !important;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+        }
+        
+        .maplibregl-popup-tip {
+          border-top-color: #111 !important;
+          border-bottom-color: #111 !important;
+        }
+        
+        .maplibregl-popup-close-button {
+          color: rgba(255,255,255,0.3) !important;
+          font-size: 16px !important;
+          padding: 5px !important;
+        }
+        
+        .maplibregl-popup-close-button:hover {
+          color: white !important;
           background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          padding: 0 !important;
         }
-        .custom-popup .leaflet-popup-content {
-          margin: 0 !important;
+
+        /* Custom animation for smooth transitions */
+        .maplibregl-canvas {
+          transition: all 0.35s cubic-bezier(.16,1,.3,1) !important;
         }
-        .custom-popup .leaflet-popup-tip-container { display: none !important; }
-
-        /* Disable default marker outline */
-        .leaflet-marker-icon:focus { outline: none !important; }
-
-        /* Smooth pan animation */
-        .leaflet-zoom-anim .leaflet-zoom-animated {
-          transition: transform 0.35s cubic-bezier(.16,1,.3,1) !important;
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
-      <div
+      <Map
         ref={mapRef}
-        style={{ height, width: "100%", display: "block" }}
-      />
+        {...viewState}
+        onMove={evt => setViewState(evt.viewState)}
+        style={{ width: '100%', height }}
+        mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" // Dark theme
+        attributionControl={false} // We'll add custom attribution
+        reuseMaps
+      >
+        {/* Custom Navigation Control (bottom right) */}
+        <NavigationControl position="bottom-right" showCompass={false} />
+        
+        {/* Custom Attribution (bottom left) */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, zIndex: 1 }}>
+          <div className="maplibregl-ctrl-attrib">
+            © OpenStreetMap, © CARTO
+          </div>
+        </div>
+
+        {/* Pickup Marker */}
+        {pickupLocation && (
+          <CustomMarker
+            position={pickupLocation}
+            color="#ffffff"
+            label="A"
+            type="pickup"
+          />
+        )}
+
+        {/* Drop Marker */}
+        {dropLocation && (
+          <CustomMarker
+            position={dropLocation}
+            color="#e5e5e5"
+            label="B"
+            type="drop"
+          />
+        )}
+
+        {/* Pickup Popup */}
+        {pickupLocation && activePopup === 'pickup' && (
+          <Popup
+            longitude={pickupLocation.lng}
+            latitude={pickupLocation.lat}
+            closeButton={true}
+            closeOnClick={false}
+            onClose={() => setActivePopup(null)}
+            anchor="bottom"
+            offset={[0, -36]} // Adjust for marker height
+          >
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>📍 Pickup</div>
+              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>
+                {pickupLocation.lat.toFixed(4)}, {pickupLocation.lng.toFixed(4)}
+              </div>
+            </div>
+          </Popup>
+        )}
+
+        {/* Drop Popup */}
+        {dropLocation && activePopup === 'drop' && (
+          <Popup
+            longitude={dropLocation.lng}
+            latitude={dropLocation.lat}
+            closeButton={true}
+            closeOnClick={false}
+            onClose={() => setActivePopup(null)}
+            anchor="bottom"
+            offset={[0, -36]} // Adjust for marker height
+          >
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>🏁 Drop-off</div>
+              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>
+                {dropLocation.lat.toFixed(4)}, {dropLocation.lng.toFixed(4)}
+              </div>
+            </div>
+          </Popup>
+        )}
+
+        {/* Route line between pickup and drop */}
+        {pickupLocation && dropLocation && (
+          <Source
+            id="route"
+            type="geojson"
+            data={{
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [pickupLocation.lng, pickupLocation.lat],
+                  [dropLocation.lng, dropLocation.lat]
+                ]
+              }
+            }}
+          >
+            {/* Subtle glow layer */}
+            <Layer
+              id="route-glow"
+              type="line"
+              paint={{
+                'line-color': 'rgba(255,255,255,0.12)',
+                'line-width': 8,
+                'line-opacity': 0.5
+              }}
+            />
+            {/* Main dashed line */}
+            <Layer
+              id="route-line"
+              type="line"
+              paint={{
+                'line-color': 'rgba(255,255,255,0.7)',
+                'line-width': 2.5,
+                'line-dasharray': [6, 6]
+              }}
+            />
+          </Source>
+        )}
+      </Map>
     </>
   );
 };
