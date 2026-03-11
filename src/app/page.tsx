@@ -77,13 +77,23 @@ export default function Home() {
     };
   }, []);
 
-  const particles = Array.from({ length: 18 }, (_, i) => ({
-    width: `${Math.random() * 6 + 2}px`,
-    height: `${Math.random() * 6 + 2}px`,
-    top: `${Math.random() * 100}%`,
-    left: `${Math.random() * 100}%`,
-    animation: `float ${4 + Math.random() * 6}s ease-in-out ${Math.random() * 3}s infinite alternate`,
-  }));
+  const particles = Array.from({ length: 18 }, (_, i) => {
+    const base = i + 1;
+    const width = (base * 7) % 6 + 2; // 2px - 8px
+    const height = (base * 11) % 6 + 2;
+    const top = (base * 37) % 100; // 0% - 99%
+    const left = (base * 53) % 100;
+    const duration = 4 + ((base * 13) % 60) / 10; // 4s - 10s
+    const delay = ((base * 17) % 30) / 10; // 0s - 3s
+
+    return {
+      width: `${width}px`,
+      height: `${height}px`,
+      top: `${top}%`,
+      left: `${left}%`,
+      animation: `float ${duration}s ease-in-out ${delay}s infinite alternate`,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden font-sans">
