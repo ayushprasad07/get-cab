@@ -1,0 +1,74 @@
+
+> get-cab@0.1.0 lint
+> eslint
+
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/api/auth/driver/login/route.ts
+  42:23  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/api/auth/driver/register/route.ts
+  46:23  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/api/auth/user/login/route.ts
+  42:23  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/api/auth/user/register/route.ts
+  44:23  warning  '_' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/auth/driver-login/page.tsx
+  84:18  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/auth/user-login/page.tsx
+  84:18  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/booking/page.tsx
+  17:11  warning  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/dashboard/driver/page.tsx
+  12:43  warning  'updateBooking' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
+  16:6   warning  React Hook useEffect has a missing dependency: 'getBookings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/app/dashboard/user/page.tsx
+  17:6  warning  React Hook useEffect has a missing dependency: 'getBookings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/components/ui/input.tsx
+  4:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/context/AuthContext.tsx
+   15:24  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   17:26  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+   59:49  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  108:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  115:51  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/context/BookingContext.tsx
+   11:25  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   14:44  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   25:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   47:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+   73:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  102:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  109:69  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:14  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/lib/db.ts
+  14:5   error  'cached' is never reassigned. Use 'const' instead  prefer-const
+  14:43  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+  28:14  error  Unexpected any. Specify a different type           @typescript-eslint/no-explicit-any
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/lib/jwt.ts
+  19:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  27:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/lib/mailer.ts
+  30:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/ayushprasad/Desktop/cab_project/get-cab/src/middleware.ts
+  27:9  warning  'isPublicRoute' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 34 problems (15 errors, 19 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+
